@@ -4,19 +4,20 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { PrimaryTextInput } from "@/components/PrimaryTextInput";
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import { Field, FieldProps, Formik, FormikProps } from "formik";
 import * as Yup from "yup";
 import { SolidButton } from "@/components/SolidButton";
 import { router } from "expo-router";
 import { useApi } from "@/hooks/useApi";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-interface RegisterValues {
+interface LoginValues {
   username: string;
   password: string;
 }
 
-const registerSchema = Yup.object().shape({
+const loginSchema = Yup.object().shape({
   username: Yup.string().trim().required("Username is required."),
   password: Yup.string()
     .required("Please enter your password.")
@@ -26,23 +27,28 @@ const registerSchema = Yup.object().shape({
     ),
 });
 
-export default function RegisterScreen() {
-  const formikRef = useRef<FormikProps<RegisterValues>>(null);
-  const { register } = useApi();
+export default function LoginScreen() {
+  const formikRef = useRef<FormikProps<LoginValues>>(null);
+  const { login } = useApi();
 
-  const handleRegister = async (values: RegisterValues) => {
+  const handleLogin = async (values: LoginValues) => {
     try {
-      const response = await register(values);
-      alert(response?.message);
+      const response = await login(values);
+      await AsyncStorage.setItem("token", response?.token);
+
       formikRef.current?.resetForm();
-      router.replace("/login", { relativeToDirectory: true });
-    } catch (error) {
+      router.replace("/todo", { relativeToDirectory: true });
+    } catch (error: any) {
       alert(error?.response?.data?.error || "An unexpected error occurred.");
     }
   };
 
+  const goToRegister = useCallback(() => {
+    router.navigate("/register", { relativeToDirectory: true });
+  }, [router]);
+
   const renderField = (
-    name: keyof RegisterValues,
+    name: keyof LoginValues,
     placeholder: string,
     secureTextEntry?: boolean
   ) => (
@@ -81,24 +87,28 @@ export default function RegisterScreen() {
         innerRef={formikRef}
         validateOnChange
         validateOnBlur
-        onSubmit={handleRegister}
+        onSubmit={handleLogin}
         initialValues={{
           username: "",
           password: "",
         }}
-        validationSchema={registerSchema}
+        validationSchema={loginSchema}
       >
         {({ handleSubmit }) => (
           <>
-            <ThemedText type="title">Register</ThemedText>
+            <ThemedText type="title">Login</ThemedText>
 
             <ThemedText type="subtitle">Username</ThemedText>
+
             {renderField("username", "Type your username...")}
 
             <ThemedText type="subtitle">Password</ThemedText>
+
             {renderField("password", "Type your password...", true)}
 
-            <SolidButton onPress={handleSubmit} label="Register" />
+            <SolidButton onPress={handleSubmit} label="Login" />
+
+            <SolidButton onPress={goToRegister} label="Register" />
           </>
         )}
       </Formik>

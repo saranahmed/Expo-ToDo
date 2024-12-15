@@ -25,7 +25,7 @@ export default function ToDoScreen() {
   const handleSignOut = async () => {
     await AsyncStorage.removeItem("token");
 
-    router.navigate("/login", { relativeToDirectory: true });
+    router.replace("/", { relativeToDirectory: true });
   };
 
   return (

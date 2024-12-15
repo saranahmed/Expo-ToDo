@@ -10,14 +10,13 @@ import * as Yup from "yup";
 import { SolidButton } from "@/components/SolidButton";
 import { router } from "expo-router";
 import { useApi } from "@/hooks/useApi";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-interface LoginValues {
+interface RegisterValues {
   username: string;
   password: string;
 }
 
-const loginSchema = Yup.object().shape({
+const registerSchema = Yup.object().shape({
   username: Yup.string().trim().required("Username is required."),
   password: Yup.string()
     .required("Please enter your password.")
@@ -27,24 +26,23 @@ const loginSchema = Yup.object().shape({
     ),
 });
 
-export default function LoginScreen() {
-  const formikRef = useRef<FormikProps<LoginValues>>(null);
-  const { login } = useApi();
+export default function RegisterScreen() {
+  const formikRef = useRef<FormikProps<RegisterValues>>(null);
+  const { register } = useApi();
 
-  const handleLogin = async (values: LoginValues) => {
+  const handleRegister = async (values: RegisterValues) => {
     try {
-      const response = await login(values);
-      await AsyncStorage.setItem("token", response?.token);
-
+      const response = await register(values);
+      alert(response?.message);
       formikRef.current?.resetForm();
-      router.navigate("/todo", { relativeToDirectory: true });
-    } catch (error: any) {
+      router.navigate("/", { relativeToDirectory: true });
+    } catch (error) {
       alert(error?.response?.data?.error || "An unexpected error occurred.");
     }
   };
 
   const renderField = (
-    name: keyof LoginValues,
+    name: keyof RegisterValues,
     placeholder: string,
     secureTextEntry?: boolean
   ) => (
@@ -83,26 +81,24 @@ export default function LoginScreen() {
         innerRef={formikRef}
         validateOnChange
         validateOnBlur
-        onSubmit={handleLogin}
+        onSubmit={handleRegister}
         initialValues={{
           username: "",
           password: "",
         }}
-        validationSchema={loginSchema}
+        validationSchema={registerSchema}
       >
         {({ handleSubmit }) => (
           <>
-            <ThemedText type="title">Login</ThemedText>
+            <ThemedText type="title">Register</ThemedText>
 
             <ThemedText type="subtitle">Username</ThemedText>
-
             {renderField("username", "Type your username...")}
 
             <ThemedText type="subtitle">Password</ThemedText>
-
             {renderField("password", "Type your password...", true)}
 
-            <SolidButton onPress={handleSubmit} label="Login" />
+            <SolidButton onPress={handleSubmit} label="Register" />
           </>
         )}
       </Formik>
