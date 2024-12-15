@@ -3,22 +3,15 @@ import { Text, TouchableOpacity, View, StyleSheet } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { Colors } from "@/constants/Colors";
 
-export function ToDoListCard() {
+export function ToDoListCard({data,index}) {
   return (
     <View style={styles.cardContainer}>
       <ThemedText type="default" style={styles.taskNumber}>
-        01
+        {index+1}
       </ThemedText>
 
       <ThemedText type="default" style={styles.taskTitle}>
-        This is my title or message for the task. It will be truncated if it is
-        too long. This is my title or message for the task. It will be truncated
-        if it is too long. This is my title or message for the task. It will be
-        truncated if it is too long. This is my title or message for the task.
-        It will be truncated if it is too long. This is my title or message for
-        the task. It will be truncated if it is too long. This is my title or
-        message for the task. It will be truncated if it is too long. This is my
-        title or message for the task. It will be truncated if it is too long.
+      {data?.title}
       </ThemedText>
 
       <View style={styles.actionContainer}>
@@ -47,6 +40,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.dark.icon,
     borderRadius: 8,
     padding: 16,
+    marginBottom:12
   },
   taskNumber: {
     color: "#777",

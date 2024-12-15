@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Platform } from "react-native";
+import { Image, StyleSheet, Platform, FlatList } from "react-native";
 
 import { HelloWave } from "@/components/HelloWave";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
@@ -8,25 +8,56 @@ import { PrimaryTextInput } from "@/components/PrimaryTextInput";
 import { SolidButton } from "@/components/SolidButton";
 import { ToDoListCard } from "@/components/ToDoListCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 import { router } from "expo-router";
+import { useApi } from "@/hooks/useApi";
 
 export default function ToDoScreen() {
+  const { fetchTodos, createTodo } = useApi();
+
+  const [token, setToken] = useState<string | null>(null);
+  const [toDos, setToDos] = useState<[]>([]);
+  const [toDoTitle, setToDoTitle] = useState<string>(``);
+
   useLayoutEffect(() => {
-    getToken();
+    handleGetToken();
   }, []);
 
-  const getToken = async () => {
+  const handleGetToken = async () => {
     const token = await AsyncStorage.getItem("token");
-
-    console.log(token, "value");
+    handleGetToDos(token);
+    setToken(token);
   };
 
   const handleSignOut = async () => {
     await AsyncStorage.removeItem("token");
-
     router.replace("/", { relativeToDirectory: true });
   };
+
+  const handleGetToDos = async (token: string) => {
+    const response = await fetchTodos(token);
+    setToDos(response?.tasks);
+  };
+
+  const handleCreateToDo = async () => {
+    if (toDoTitle.trim() === "") {
+      return alert(`ToDo title cannot be empty`);
+    }
+
+    try {
+      setToDoTitle(``)
+      await createTodo({ title: toDoTitle }, token);
+      await handleGetToDos(token);
+
+      alert(`ToDo creation successful`);
+    } catch (error) {
+      alert(error?.response?.data?.error || "An unexpected error occurred.");
+    }
+  };
+
+  if (token === null) {
+    return null;
+  }
 
   return (
     <ParallaxScrollView
@@ -41,29 +72,35 @@ export default function ToDoScreen() {
       <SolidButton onPress={handleSignOut} label="Sign Out" />
 
       <ThemedView style={{ ...styles.titleContainer, marginTop: 24 }}>
-        <ThemedText type="title">ToDo!</ThemedText>
+        <ThemedText type="title">Create ToDo!</ThemedText>
         <HelloWave />
       </ThemedView>
 
       <PrimaryTextInput
-        placeholder={`Enter task details...`}
-        // onChangeText={field.onChange(name)}
-        // value={field.value}
-        // onBlur={field.onBlur(name)}
-        // secureTextEntry={secureTextEntry}
+        placeholder={`Enter ToDo details...`}
+        onChangeText={(val) => setToDoTitle(val)}
+        value={toDoTitle}
       />
 
-      <SolidButton
-        //  onPress={handleLogin}
-        label="Submit Task"
-      />
+      <SolidButton onPress={handleCreateToDo} label="Submit Task" />
 
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">My Tasks</ThemedText>
+        <ThemedText type="title">My ToDo's</ThemedText>
         <HelloWave />
       </ThemedView>
 
-      <ToDoListCard />
+      {toDos.length > 0 ? (
+        <FlatList
+          data={toDos}
+          renderItem={({ item, index }) => (
+            <ToDoListCard data={item} index={index} />
+          )}
+          keyExtractor={(item) => item?._id}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <ThemedText type="defaultSemiBold">No ToDo Available</ThemedText>
+      )}
     </ParallaxScrollView>
   );
 }

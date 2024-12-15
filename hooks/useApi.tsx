@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 
-const BASE_URL = " http://localhost:3000";
+const BASE_URL = "http://localhost:3000";
 
 export function useApi() {
   const [loading, setLoading] = useState(false);
@@ -10,7 +10,8 @@ export function useApi() {
   const handleApiCall = async (
     method: "GET" | "POST" | "PUT" | "DELETE",
     url: string,
-    data?: any
+    data?: any,
+    token?: string
   ) => {
     setLoading(true);
     setError(null);
@@ -21,6 +22,7 @@ export function useApi() {
         data,
         headers: {
           "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
         },
       });
       setLoading(false);
@@ -41,26 +43,27 @@ export function useApi() {
     return await handleApiCall("POST", "/auth/login", userData);
   };
 
-  const fetchTodos = async () => {
-    return await handleApiCall("GET", "/todos");
+  const fetchTodos = async (token: string) => {
+    return await handleApiCall("GET", "/tasks", undefined, token);
   };
 
-  const createTodo = async (todoData: {
-    title: string;
-    description: string;
-  }) => {
-    return await handleApiCall("POST", "/todos", todoData);
+  const createTodo = async (
+    todoData: { title: string},
+    token: string
+  ) => {
+    return await handleApiCall("POST", "/tasks", todoData, token);
   };
 
   const updateTodo = async (
     id: string,
-    todoData: { title?: string; description?: string }
+    todoData: { title?: string; description?: string },
+    token: string
   ) => {
-    return await handleApiCall("PUT", `/todos/${id}`, todoData);
+    return await handleApiCall("PUT", `/tasks/${id}`, todoData, token);
   };
 
-  const deleteTodo = async (id: string) => {
-    return await handleApiCall("DELETE", `/todos/${id}`);
+  const deleteTodo = async (id: string, token: string) => {
+    return await handleApiCall("DELETE", `/tasks/${id}`, undefined, token);
   };
 
   return {
