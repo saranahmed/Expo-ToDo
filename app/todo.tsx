@@ -1,5 +1,4 @@
 import { Image, StyleSheet, Platform, FlatList } from "react-native";
-
 import { HelloWave } from "@/components/HelloWave";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -13,25 +12,26 @@ import { router } from "expo-router";
 import { useApi } from "@/hooks/useApi";
 
 export default function ToDoScreen() {
-  const { fetchTodos, createTodo } = useApi();
+  const { fetchTodos, createTodo, deleteTodo, updateTodo } = useApi();
 
   const [token, setToken] = useState<string | null>(null);
   const [toDos, setToDos] = useState<[]>([]);
   const [toDoTitle, setToDoTitle] = useState<string>(``);
+  const [toDoToUpdate, setToDoToUpdate] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     handleGetToken();
   }, []);
 
+  const handleSignOut = async () => {
+    await AsyncStorage.removeItem("token");
+    router.replace("/", { relativeToDirectory: true });
+  };
+
   const handleGetToken = async () => {
     const token = await AsyncStorage.getItem("token");
     handleGetToDos(token);
     setToken(token);
-  };
-
-  const handleSignOut = async () => {
-    await AsyncStorage.removeItem("token");
-    router.replace("/", { relativeToDirectory: true });
   };
 
   const handleGetToDos = async (token: string) => {
@@ -43,16 +43,34 @@ export default function ToDoScreen() {
     if (toDoTitle.trim() === "") {
       return alert(`ToDo title cannot be empty`);
     }
+    setToDoTitle(``);
+    await createTodo({ title: toDoTitle }, token);
+    await handleGetToDos(token);
+  };
 
-    try {
-      setToDoTitle(``)
-      await createTodo({ title: toDoTitle }, token);
-      await handleGetToDos(token);
+  const handleDeleteToDo = async (idToDelete: string) => {
+    setToDos((prevToDos) =>
+      prevToDos.filter((todo) => todo._id !== idToDelete)
+    );
 
-      alert(`ToDo creation successful`);
-    } catch (error) {
-      alert(error?.response?.data?.error || "An unexpected error occurred.");
+    await deleteTodo(idToDelete, token);
+  };
+
+  const handleUpdateToDo = async () => {
+    if (toDoTitle.trim() === "") {
+      return alert("ToDo title cannot be empty");
     }
+
+    setToDos((prevToDos) =>
+      prevToDos.map((todo) =>
+        todo._id === toDoToUpdate ? { ...todo, title: toDoTitle } : todo
+      )
+    );
+
+    await updateTodo(toDoToUpdate, { title: toDoTitle }, token);
+
+    setToDoToUpdate(null);
+    setToDoTitle(``);
   };
 
   if (token === null) {
@@ -82,7 +100,10 @@ export default function ToDoScreen() {
         value={toDoTitle}
       />
 
-      <SolidButton onPress={handleCreateToDo} label="Submit Task" />
+      <SolidButton
+        onPress={toDoToUpdate === null ? handleCreateToDo : handleUpdateToDo}
+        label={toDoToUpdate === null ? "Submit ToDo" : "Update ToDo"}
+      />
 
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">My ToDo's</ThemedText>
@@ -93,7 +114,15 @@ export default function ToDoScreen() {
         <FlatList
           data={toDos}
           renderItem={({ item, index }) => (
-            <ToDoListCard data={item} index={index} />
+            <ToDoListCard
+              data={item}
+              index={index}
+              onDeletePress={() => handleDeleteToDo(item?._id)}
+              onUpdatePress={() => {
+                setToDoTitle(item?.title);
+                setToDoToUpdate(item?._id);
+              }}
+            />
           )}
           keyExtractor={(item) => item?._id}
           showsVerticalScrollIndicator={false}

@@ -3,25 +3,40 @@ import { Text, TouchableOpacity, View, StyleSheet } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { Colors } from "@/constants/Colors";
 
-export function ToDoListCard({data,index}) {
+interface ToDoListCardProps {
+  data: {
+    title: string;
+    _id?: string;
+  };
+  index: number;
+  onDeletePress: () => void;
+  onUpdatePress: () => void;
+}
+
+export function ToDoListCard({
+  data,
+  index,
+  onDeletePress,
+  onUpdatePress,
+}: ToDoListCardProps) {
   return (
     <View style={styles.cardContainer}>
       <ThemedText type="default" style={styles.taskNumber}>
-        {index+1}
+        {index + 1}
       </ThemedText>
 
       <ThemedText type="default" style={styles.taskTitle}>
-      {data?.title}
+        {data?.title}
       </ThemedText>
 
       <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={onUpdatePress}>
           <ThemedText type="default" style={styles.updateText}>
             Update
           </ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onDeletePress}>
           <ThemedText type="default" style={styles.deleteText}>
             Delete
           </ThemedText>
@@ -40,7 +55,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.dark.icon,
     borderRadius: 8,
     padding: 16,
-    marginBottom:12
+    marginBottom: 12,
   },
   taskNumber: {
     color: "#777",

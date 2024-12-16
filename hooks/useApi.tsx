@@ -47,16 +47,13 @@ export function useApi() {
     return await handleApiCall("GET", "/tasks", undefined, token);
   };
 
-  const createTodo = async (
-    todoData: { title: string},
-    token: string
-  ) => {
+  const createTodo = async (todoData: { title: string }, token: string) => {
     return await handleApiCall("POST", "/tasks", todoData, token);
   };
 
   const updateTodo = async (
     id: string,
-    todoData: { title?: string; description?: string },
+    todoData: { title: string },
     token: string
   ) => {
     return await handleApiCall("PUT", `/tasks/${id}`, todoData, token);
