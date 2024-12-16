@@ -1,4 +1,8 @@
-import { Image, StyleSheet, Platform, FlatList } from "react-native";
+import { Image, StyleSheet, FlatList } from "react-native";
+import { useLayoutEffect, useState, useCallback } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+
 import { HelloWave } from "@/components/HelloWave";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -6,74 +10,104 @@ import { ThemedView } from "@/components/ThemedView";
 import { PrimaryTextInput } from "@/components/PrimaryTextInput";
 import { SolidButton } from "@/components/SolidButton";
 import { ToDoListCard } from "@/components/ToDoListCard";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useLayoutEffect, useState } from "react";
-import { router } from "expo-router";
 import { useApi } from "@/hooks/useApi";
+
+interface ToDo {
+  _id: string;
+  title: string;
+  completed: boolean;
+}
 
 export default function ToDoScreen() {
   const { fetchTodos, createTodo, deleteTodo, updateTodo } = useApi();
 
   const [token, setToken] = useState<string | null>(null);
-  const [toDos, setToDos] = useState<[]>([]);
-  const [toDoTitle, setToDoTitle] = useState<string>(``);
+  const [toDos, setToDos] = useState<ToDo[]>([]);
+  const [toDoTitle, setToDoTitle] = useState<string>("");
   const [toDoToUpdate, setToDoToUpdate] = useState<string | null>(null);
 
+  // Retrieve token and fetch todos on initial load
   useLayoutEffect(() => {
-    handleGetToken();
+    const initialize = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem("token");
+        if (!storedToken) {
+          router.replace("/", { relativeToDirectory: true });
+          return;
+        }
+        setToken(storedToken);
+        await fetchAndSetTodos(storedToken);
+      } catch (error) {
+        console.error("Error initializing app:", error);
+      }
+    };
+    initialize();
   }, []);
 
+  const fetchAndSetTodos = useCallback(
+    async (authToken: string) => {
+      try {
+        const response = await fetchTodos(authToken);
+        setToDos(response?.tasks || []);
+      } catch (error) {
+        console.error("Error fetching todos:", error);
+      }
+    },
+    [fetchTodos]
+  );
+
   const handleSignOut = async () => {
-    await AsyncStorage.removeItem("token");
-    router.replace("/", { relativeToDirectory: true });
-  };
-
-  const handleGetToken = async () => {
-    const token = await AsyncStorage.getItem("token");
-    handleGetToDos(token);
-    setToken(token);
-  };
-
-  const handleGetToDos = async (token: string) => {
-    const response = await fetchTodos(token);
-    setToDos(response?.tasks);
+    try {
+      await AsyncStorage.removeItem("token");
+      router.replace("/", { relativeToDirectory: true });
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   const handleCreateToDo = async () => {
-    if (toDoTitle.trim() === "") {
-      return alert(`ToDo title cannot be empty`);
+    if (!toDoTitle.trim()) {
+      return alert("ToDo title cannot be empty");
     }
-    setToDoTitle(``);
-    await createTodo({ title: toDoTitle }, token);
-    await handleGetToDos(token);
+    try {
+      await createTodo({ title: toDoTitle }, token!);
+      setToDoTitle("");
+      await fetchAndSetTodos(token!);
+    } catch (error) {
+      console.error("Error creating todo:", error);
+    }
   };
 
   const handleDeleteToDo = async (idToDelete: string) => {
-    setToDos((prevToDos) =>
-      prevToDos.filter((todo) => todo._id !== idToDelete)
-    );
-
-    await deleteTodo(idToDelete, token);
+    try {
+      setToDos((prevToDos) =>
+        prevToDos.filter((todo) => todo._id !== idToDelete)
+      );
+      await deleteTodo(idToDelete, token!);
+    } catch (error) {
+      console.error("Error deleting todo:", error);
+    }
   };
 
   const handleUpdateToDo = async () => {
-    if (toDoTitle.trim() === "") {
+    if (!toDoTitle.trim()) {
       return alert("ToDo title cannot be empty");
     }
-
-    setToDos((prevToDos) =>
-      prevToDos.map((todo) =>
-        todo._id === toDoToUpdate ? { ...todo, title: toDoTitle } : todo
-      )
-    );
-
-    await updateTodo(toDoToUpdate, { title: toDoTitle }, token);
-
-    setToDoToUpdate(null);
-    setToDoTitle(``);
+    try {
+      setToDos((prevToDos) =>
+        prevToDos.map((todo) =>
+          todo._id === toDoToUpdate ? { ...todo, title: toDoTitle } : todo
+        )
+      );
+      await updateTodo(toDoToUpdate!, { title: toDoTitle }, token!);
+      setToDoToUpdate(null);
+      setToDoTitle("");
+    } catch (error) {
+      console.error("Error updating todo:", error);
+    }
   };
 
-  if (token === null) {
+  if (!token) {
     return null;
   }
 
@@ -89,23 +123,23 @@ export default function ToDoScreen() {
     >
       <SolidButton onPress={handleSignOut} label="Sign Out" />
 
-      <ThemedView style={{ ...styles.titleContainer, marginTop: 24 }}>
+      <ThemedView style={styles.sectionContainer}>
         <ThemedText type="title">Create ToDo!</ThemedText>
         <HelloWave />
       </ThemedView>
 
       <PrimaryTextInput
-        placeholder={`Enter ToDo details...`}
-        onChangeText={(val) => setToDoTitle(val)}
+        placeholder="Enter ToDo details..."
+        onChangeText={setToDoTitle}
         value={toDoTitle}
       />
 
       <SolidButton
-        onPress={toDoToUpdate === null ? handleCreateToDo : handleUpdateToDo}
-        label={toDoToUpdate === null ? "Submit ToDo" : "Update ToDo"}
+        onPress={toDoToUpdate ? handleUpdateToDo : handleCreateToDo}
+        label={toDoToUpdate ? "Update ToDo" : "Submit ToDo"}
       />
 
-      <ThemedView style={styles.titleContainer}>
+      <ThemedView style={styles.sectionContainer}>
         <ThemedText type="title">My ToDo's</ThemedText>
         <HelloWave />
       </ThemedView>
@@ -117,14 +151,14 @@ export default function ToDoScreen() {
             <ToDoListCard
               data={item}
               index={index}
-              onDeletePress={() => handleDeleteToDo(item?._id)}
+              onDeletePress={() => handleDeleteToDo(item._id)}
               onUpdatePress={() => {
-                setToDoTitle(item?.title);
-                setToDoToUpdate(item?._id);
+                setToDoTitle(item.title);
+                setToDoToUpdate(item._id);
               }}
             />
           )}
-          keyExtractor={(item) => item?._id}
+          keyExtractor={(item) => item._id}
           showsVerticalScrollIndicator={false}
         />
       ) : (
@@ -135,15 +169,11 @@ export default function ToDoScreen() {
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  sectionContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 24,
     gap: 12,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
   },
   reactLogo: {
     height: 178,
