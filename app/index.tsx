@@ -11,6 +11,7 @@ import { SolidButton } from "@/components/SolidButton";
 import { router } from "expo-router";
 import { useApi } from "@/hooks/useApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetworkLogger from 'react-native-network-logger';
 
 interface LoginValues {
   username: string;
@@ -112,6 +113,8 @@ export default function LoginScreen() {
           </>
         )}
       </Formik>
+
+      {/* <NetworkLogger /> */}
     </ParallaxScrollView>
   );
 }

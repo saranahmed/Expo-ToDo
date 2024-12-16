@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "http://192.168.18.95:3000";
 
 export function useApi() {
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export function useApi() {
         data,
         headers: {
           "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
+          Authorization: token ? `Bearer ${token}` : ``,
         },
       });
       setLoading(false);
@@ -30,7 +30,7 @@ export function useApi() {
     } catch (err: any) {
       setLoading(false);
       setError(err.response?.data?.message || "Something went wrong");
-      console.error("API Error:", err);
+      // console.error("API Error:", err);
       throw err;
     }
   };

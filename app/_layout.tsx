@@ -9,9 +9,12 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
-
+import { startNetworkLogging } from 'react-native-network-logger';
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { LogBox } from "react-native";
 
+LogBox.ignoreAllLogs();//Ignore all log notifications
+startNetworkLogging();
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
