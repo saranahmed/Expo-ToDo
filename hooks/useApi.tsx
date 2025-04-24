@@ -1,8 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
 
-const BASE_URL = "http://192.168.18.95:3000";
-
 export function useApi() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +16,7 @@ export function useApi() {
     try {
       const response = await axios({
         method,
-        url: `${BASE_URL}${url}`,
+        url: `${process.env.BASE_URL}${url}`,
         data,
         headers: {
           "Content-Type": "application/json",
